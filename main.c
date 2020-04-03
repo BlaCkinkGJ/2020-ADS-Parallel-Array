@@ -28,16 +28,26 @@ static void setup(const char *inp_file, const char *outp_file)
 	fscanf(inp_fp, "%d\n", &N);
 
 #ifdef TRIVIAL
+	printf("[%s:%s(%d)] trivial setting initialize\n", __FILE__,
+	       __FUNCTION__, __LINE__);
 	operation.init = trivial_init;
 	operation.insert = trivial_insert;
 	operation.search = trivial_search;
 	operation.remove = trivial_remove;
+#ifdef DEBUG
+	operation.get_current_usage = trivial_get_current_usage;
+#endif
 	operation.free = trivial_free;
 #else
+	printf("[%s:%s(%d)] improve setting initialize\n", __FILE__,
+	       __FUNCTION__, __LINE__);
 	operation.init = improve_init;
 	operation.insert = improve_insert;
 	operation.search = improve_search;
 	operation.remove = improve_remove;
+#ifdef DEBUG
+	operation.get_current_usage = improve_get_current_usage;
+#endif
 	operation.free = improve_free;
 #endif
 	ret = operation.init();
@@ -81,10 +91,20 @@ static void run(clock_t start)
 				fprintf(outp_fp, "REMOVE <FAIL>\n");
 			}
 		} else {
+#ifdef DEBUG
 			fprintf(stderr, "[%s:%s(%d)] invalid command detected",
 				__FILE__, __FUNCTION__, __LINE__);
+#endif
 			fprintf(outp_fp, "OTHERS <FAIL>\n");
 		} // end of if
+
+#ifdef DEBUG
+		static int max = -1;
+		if (max < operation.get_current_usage()) {
+			printf("max usage: %d/%d\n", max, MAX_ENTRY_SIZE);
+			max = operation.get_current_usage();
+		}
+#endif
 	}
 
 	free(line);

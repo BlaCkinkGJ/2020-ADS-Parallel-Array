@@ -72,3 +72,5 @@ doxygen/
 # user defined test file
 *.inp
 *.out
+trivial.exe
+normal.exe

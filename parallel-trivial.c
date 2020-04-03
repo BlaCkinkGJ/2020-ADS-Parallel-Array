@@ -22,12 +22,13 @@ static int _wp = 0;
 static int trivial_get_free_wp()
 {
 	int wp = _wp;
-	if (_id[wp] == -1 && wp < MAX_ENTRY_SIZE) {
+	int is_valid_wp = (wp < MAX_ENTRY_SIZE && wp >= 0);
+	if (is_valid_wp && _id[wp] == -1) {
 		return wp;
 	}
 
 	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
-		if (_id[wp] == 0) {
+		if (_id[wp] == -1) {
 			return wp;
 		}
 	}
@@ -65,10 +66,12 @@ static void trivial_insert_string(char **str, char **arr, const int wp)
 	char *ptr;
 	ptr = get_csv_field(str, ",\n");
 	is_valid = (ptr != NULL && strlen(ptr) != 0);
+#ifdef DEBUG
 	if (!is_valid) {
 		fprintf(stderr, "[%s:%s(%d)] Cannot find field value(id: %d)\n",
 			__FILE__, __FUNCTION__, __LINE__, _id[wp]);
 	}
+#endif
 	strncpy(arr[wp], (is_valid ? ptr : "<EMPTY>"), MAX_CHAR_LEN);
 }
 
@@ -101,8 +104,10 @@ int trivial_init(void)
 	return 0;
 
 exception:
+#ifdef DEBUG
 	fprintf(stderr, "[%s:%s(%d)] Cannot allocate the MEMORY\n", __FILE__,
 		__FUNCTION__, __LINE__);
+#endif
 	return -ENOMEM;
 }
 
@@ -120,16 +125,20 @@ int trivial_insert(char *str, FILE *outp_fp)
 	char *ptr;
 	wp = trivial_get_free_wp();
 	if (wp < 0) {
+#ifdef DEBUG
 		fprintf(stderr, "[%s:%s(%d)] Cannot find free WP\n", __FILE__,
 			__FUNCTION__, __LINE__);
+#endif
 		return -ENOMEM;
 	}
 
 	ptr = get_csv_field(&str, ",\n");
 	is_valid = (ptr != NULL && strlen(ptr) != 0);
 	if (!is_valid) {
+#ifdef DEBUG
 		fprintf(stderr, "[%s:%s(%d)] Cannot allow the empty \"id\"\n",
 			__FILE__, __FUNCTION__, __LINE__);
+#endif
 		return -EINVAL;
 	}
 	_id[wp] = atoi(ptr);
@@ -138,8 +147,12 @@ int trivial_insert(char *str, FILE *outp_fp)
 	trivial_insert_string(&str, _bban, wp);
 	trivial_insert_string(&str, _email, wp);
 
+#ifdef DEBUG
 	fprintf(outp_fp, "INSERT\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
 		_bban[wp], _email[wp]);
+#else
+	fprintf(outp_fp, "INSERT\t%d\n", _id[wp]);
+#endif
 	_wp = wp + 1;
 	return 0;
 }
@@ -158,8 +171,10 @@ int trivial_search(char *str, FILE *outp_fp)
 	id = atoi(get_csv_field(&str, ","));
 	wp = trivial_find_wp(id);
 	if (wp < 0) {
+#ifdef DEBUG
 		fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
 			__FUNCTION__, __LINE__);
+#endif
 		return -ENOMEM;
 	}
 	fprintf(outp_fp, "SEARCH\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
@@ -181,14 +196,34 @@ int trivial_remove(char *str, FILE *outp_fp)
 	id = atoi(get_csv_field(&str, ",\n"));
 	wp = trivial_find_wp(id);
 	if (wp < 0) {
+#ifdef DEBUG
 		fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
 			__FUNCTION__, __LINE__);
+#endif
 		return -ENOMEM;
 	}
 	_id[wp] = -1;
 	fprintf(outp_fp, "REMOVE\t%d\n", id);
 	return 0;
 }
+
+#ifdef DEBUG
+/**
+ * @brief 현재 사용량을 출력하도록 한다.
+ * 
+ * @return int 현재 사용량을 출력한다.
+ */
+int trivial_get_current_usage()
+{
+	int wp, count = 0;
+	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
+		if (_id[wp] != -1) {
+			count++;
+		}
+	}
+	return count;
+}
+#endif
 
 /**
  * @brief trivial에서 설정된 것들을 해제한다.

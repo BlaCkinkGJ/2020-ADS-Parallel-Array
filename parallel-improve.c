@@ -1,16 +1,22 @@
 /**
- * @file parallel-trivial.c
+ * @file parallel-improve.c
  * @author 오기준 (kijunking@pusan.ac.kr)
- * @brief trivial한 구현 방식을 가진다.
+ * @brief improve한 구현 방식을 가진다.
  * @date 2020-04-03
  * 
  */
 #include "parallel.h"
 
+#define BYTE 8
+#define BITMAP_LEN (sizeof(unsigned long) * BYTE)
+#define BITMAP_FULL 0xffffffff /**< unsigned long이 4 바이트 이므로 */
+
 static int *_id;
 static char **_name;
 static char **_bban;
 static char **_email;
+
+static unsigned long *_bitmap;
 
 static int _wp = 0;
 
@@ -19,19 +25,36 @@ static int _wp = 0;
  * 
  * @return int wp의 index 값으로 만약 빈 공간을 찾지 못하면 -ENOENT를 반환한다.
  */
-static int trivial_get_free_wp()
+static int improve_get_free_wp(int id)
 {
-	int wp = _wp;
-	if (_id[wp] == -1 && wp < MAX_ENTRY_SIZE) {
+	int wp = _wp, i = 0, offset = 0;
+	int is_valid_wp = (wp < MAX_ENTRY_SIZE && wp >= 0);
+	if (is_valid_wp && _id[wp] == -1) {
+		i = wp / BITMAP_LEN;
+		offset = wp % BITMAP_LEN;
+		_bitmap[i] |= (0x1 << offset); /**< 비트맵에 값을 설정한다. */
 		return wp;
 	}
 
-	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
-		if (_id[wp] == 0) {
-			return wp;
-		}
-	}
-
+	/**
+	 * @brief 4 byte 단위로 비트맵을 읽어서 꽉 차지 않은 구역을 찾도록 한다.
+	 * 
+	 */
+	for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
+		if (_bitmap[i] < BITMAP_FULL) {
+			wp = i * BITMAP_LEN;
+			for (offset = 0; offset < BITMAP_LEN; offset++) {
+				if (wp + offset >= MAX_ENTRY_SIZE) {
+					goto ret;
+				}
+				if (_id[wp + offset] == -1) {
+					_bitmap[i] |= (0x1 << offset);
+					return wp + offset;
+				}
+			} // end of for
+		} // end of if
+	} // end of for
+ret:
 	return -ENOENT;
 }
 
@@ -39,16 +62,34 @@ static int trivial_get_free_wp()
  * @brief 임의의 id에 해당하는 Write Pointer(WP) 위치를 찾는다.
  * 
  * @param id 찾고자하는 id에 해당한다.
+ * @param is_remove remove 명령인 경우에 해당하는 지를 확인한다.
  * @return int 찾고자하는 id가 존재하는 WP의 위치를 반환한다. 만약 찾지 못한 경우 -ENOENT를 반환한다.
  */
-static int trivial_find_wp(const int id)
+static int improve_find_wp(const int id, const int is_remove)
 {
-	int wp;
-	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
-		if (_id[wp] == id) {
-			return wp;
-		}
-	}
+	int wp, i, offset;
+
+	/**
+	 * @brief is_remove의 경우에는 bitmap unset을 하는 과정을 추가한다.
+	 * 
+	 */
+	for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
+		if (_bitmap[i] > 0x0) {
+			wp = i * BITMAP_LEN;
+			for (offset = 0; offset < BITMAP_LEN; offset++) {
+				if (wp + offset >= MAX_ENTRY_SIZE) {
+					goto ret;
+				}
+				if (_id[wp + offset] == id) {
+					if (is_remove) {
+						_bitmap[i] &= ~(0x1 << offset);
+					}
+					return (wp + offset);
+				}
+			} // end of for
+		} // end of if
+	} // end of for
+ret:
 	return -ENOENT;
 }
 
@@ -59,27 +100,29 @@ static int trivial_find_wp(const int id)
  * @param arr 쓰고자 하는 PA 포인터
  * @param wp 현재 쓰는 위치
  */
-static void trivial_insert_string(char **str, char **arr, const int wp)
+static void improve_insert_string(char **str, char **arr, const int wp)
 {
 	int is_valid;
 	char *ptr;
 	ptr = get_csv_field(str, ",\n");
 	is_valid = (ptr != NULL && strlen(ptr) != 0);
+#ifdef DEBUG
 	if (!is_valid) {
 		fprintf(stderr, "[%s:%s(%d)] Cannot find field value(id: %d)\n",
 			__FILE__, __FUNCTION__, __LINE__, _id[wp]);
 	}
+#endif
 	strncpy(arr[wp], (is_valid ? ptr : "<EMPTY>"), MAX_CHAR_LEN);
 }
 
 /**
- * @brief trivial 방식을 초기화 하도록 한다.
+ * @brief improve 방식을 초기화 하도록 한다.
  * 
  * @return int 만약 
  */
-int trivial_init(void)
+int improve_init(void)
 {
-	int i;
+	int i, nr_bitmap;
 
 	_id = (int *)malloc(sizeof(int) * MAX_ENTRY_SIZE);
 	_name = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
@@ -98,11 +141,26 @@ int trivial_init(void)
 			goto exception;
 		}
 	}
+
+	nr_bitmap = MAX_ENTRY_SIZE / BITMAP_LEN;
+	_bitmap = (unsigned long *)malloc(sizeof(unsigned long) *
+					  (nr_bitmap + 1));
+	if (_bitmap == NULL) {
+		goto exception;
+	}
+#ifdef DEBUG
+	for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
+		_bitmap[i] &= 0x00;
+		printf("_bitmap[%d]: 0x%08lx\n", i, _bitmap[i]);
+	}
+#endif
 	return 0;
 
 exception:
+#ifdef DEBUG
 	fprintf(stderr, "[%s:%s(%d)] Cannot allocate the MEMORY\n", __FILE__,
 		__FUNCTION__, __LINE__);
+#endif
 	return -ENOMEM;
 }
 
@@ -114,32 +172,41 @@ exception:
  * 
  * @return int 정상적인 종료 때에는 0을 비정상 종료의 경우 음수 값을 반환한다.
  */
-int trivial_insert(char *str, FILE *outp_fp)
+int improve_insert(char *str, FILE *outp_fp)
 {
-	int wp, is_valid;
+	int wp, is_valid, id;
 	char *ptr;
-	wp = trivial_get_free_wp();
-	if (wp < 0) {
-		fprintf(stderr, "[%s:%s(%d)] Cannot find free WP\n", __FILE__,
-			__FUNCTION__, __LINE__);
-		return -ENOMEM;
-	}
 
 	ptr = get_csv_field(&str, ",\n");
 	is_valid = (ptr != NULL && strlen(ptr) != 0);
 	if (!is_valid) {
+#ifdef DEBUG
 		fprintf(stderr, "[%s:%s(%d)] Cannot allow the empty \"id\"\n",
 			__FILE__, __FUNCTION__, __LINE__);
+#endif
 		return -EINVAL;
 	}
-	_id[wp] = atoi(ptr);
+	id = atoi(ptr);
+	wp = improve_get_free_wp(id);
+	if (wp < 0) {
+#ifdef DEBUG
+		fprintf(stderr, "[%s:%s(%d)] Cannot find free WP\n", __FILE__,
+			__FUNCTION__, __LINE__);
+#endif
+		return -ENOMEM;
+	}
 
-	trivial_insert_string(&str, _name, wp);
-	trivial_insert_string(&str, _bban, wp);
-	trivial_insert_string(&str, _email, wp);
+	_id[wp] = id;
+	improve_insert_string(&str, _name, wp);
+	improve_insert_string(&str, _bban, wp);
+	improve_insert_string(&str, _email, wp);
 
+#ifdef DEBUG
 	fprintf(outp_fp, "INSERT\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
 		_bban[wp], _email[wp]);
+#else
+	fprintf(outp_fp, "INSERT\t%d\n", _id[wp]);
+#endif
 	_wp = wp + 1;
 	return 0;
 }
@@ -152,14 +219,16 @@ int trivial_insert(char *str, FILE *outp_fp)
  * 
  * @return int 정상 종료 시에 0을 반환하고 비정상 종료시 -1을 반환한다.
  */
-int trivial_search(char *str, FILE *outp_fp)
+int improve_search(char *str, FILE *outp_fp)
 {
 	int wp, id;
 	id = atoi(get_csv_field(&str, ","));
-	wp = trivial_find_wp(id);
+	wp = improve_find_wp(id, 0);
 	if (wp < 0) {
+#ifdef DEBUG
 		fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
 			__FUNCTION__, __LINE__);
+#endif
 		return -ENOMEM;
 	}
 	fprintf(outp_fp, "SEARCH\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
@@ -175,14 +244,16 @@ int trivial_search(char *str, FILE *outp_fp)
  * 
  * @return int 정상 종료 시에 0을 반환하고 비정상 종료시 -1을 반환한다.
  */
-int trivial_remove(char *str, FILE *outp_fp)
+int improve_remove(char *str, FILE *outp_fp)
 {
 	int wp, id;
 	id = atoi(get_csv_field(&str, ",\n"));
-	wp = trivial_find_wp(id);
+	wp = improve_find_wp(id, 1);
 	if (wp < 0) {
+#ifdef DEBUG
 		fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
 			__FUNCTION__, __LINE__);
+#endif
 		return -ENOMEM;
 	}
 	_id[wp] = -1;
@@ -190,11 +261,29 @@ int trivial_remove(char *str, FILE *outp_fp)
 	return 0;
 }
 
+#ifdef DEBUG
 /**
- * @brief trivial에서 설정된 것들을 해제한다.
+ * @brief 현재 사용량을 출력하도록 한다.
+ * 
+ * @return int 현재 사용량을 출력한다.
+ */
+int improve_get_current_usage()
+{
+	int wp, count = 0;
+	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
+		if (_id[wp] != -1) {
+			count++;
+		}
+	}
+	return count;
+}
+#endif
+
+/**
+ * @brief improve에서 설정된 것들을 해제한다.
  * 
  */
-void trivial_free(void)
+void improve_free(void)
 {
 	int i;
 
