@@ -15,13 +15,14 @@
 #include <errno.h>
 #include <time.h>
 
-#define MAX_CHAR_LEN 64 /**< 레코드에서 값을 받을j수 있는 최대 크기 */
-#define MAX_ENTRY_SIZE 10000
+#define MAX_CHAR_LEN                                                           \
+	64 /** MAX_CHAR_LEN < 레코드에서 값을 받을j수 있는 최대 크기 */
+#define MAX_ENTRY_SIZE 10000 /** MAX_ENTRY_SIZE < 기본 값은 10000 */
 #define NR_ITEMS 4
 #define MAX_LINE_LEN (MAX_CHAR_LEN * NR_ITEMS)
 
-// #define TRIVIAL
-// #define DEBUG
+//#define TRIVIAL /** TRIVIAL < 이것을 enable하면 TRIVIAL한 버전이 실행된다. */
+//#define DEBUG /** DEBUG < 이것을 enable하면 DEBUG 로그가 찍히게 된다. */
 
 #define FAIL_TO_SEARCH -1
 
@@ -30,13 +31,19 @@
  *
  */
 struct op {
-	int (*init)(void); /**< 초기화를 수행한다. */
-	int (*insert)(char *str, FILE *outp_fp); /**< PA에 insert를 수행한다. */
-	int (*search)(char *str,
-		      FILE *outp_fp); /**< PA에 search 수행, search도 겸한다. */
-	int (*remove)(char *str, FILE *outp_fp); /**< PA에 remove를 수행한다. */
+	int (*init)(void);
+	int (*insert)(
+		char *str,
+		FILE *outp_fp); /** int (*insert)(char *str, FILE *outp_fp); < PA에 insert를 수행한다. */
+	int (*search)(
+		char *str,
+		FILE *outp_fp); /** int (*search)(char *str, FILE *outp_fp); < PA에 search 수행, search도 겸한다. */
+	int (*remove)(
+		char *str,
+		FILE *outp_fp); /** int (*remove)(char *str, FILE *outp_fp); < PA에 remove를 수행한다. */
 	void (*free)(void);
-	int (*get_current_usage)(void);
+	int (*get_current_usage)(
+		void); /** int (*get_current_usage)(void); < PA의 현재 메모리 사용량을 보여준다.(DEBUG 전용) */
 };
 
 #ifdef TRIVIAL
@@ -44,9 +51,7 @@ int trivial_init(void);
 int trivial_insert(char *str, FILE *outp_fp);
 int trivial_search(char *str, FILE *outp_fp);
 int trivial_remove(char *str, FILE *outp_fp);
-#ifdef DEBUG
 int trivial_get_current_usage();
-#endif
 void trivial_free(void);
 #else
 int improve_init(void);
@@ -57,6 +62,14 @@ int improve_get_current_usage();
 void improve_free(void);
 #endif
 
+/**
+ * @brief CSV 값을 하나하나 읽어오도록 한다.
+ * @warning 원본이 수정되므로 유의해야 한다.
+ *
+ * @param strptr 현재 field를 가져오고자 하는 CSV 행
+ * @param delim field를 나누는 기준 값
+ * @return char* field에 해당하는 포인터
+ */
 static inline char *get_csv_field(char **strptr, const char *delim)
 {
 	char *ptr = *strptr;

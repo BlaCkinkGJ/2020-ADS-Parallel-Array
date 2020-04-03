@@ -2,8 +2,17 @@
  * @file main.c
  * @author 오기준 (kijunking@pusan.ac.kr)
  * @brief 자료구조에 대한 테스트가 수행되는 파일이다.
+ * @details 이 프로그램을 사용하는 방법은 해당 소스 코드가 있는 폴더에
+ 테스트 케이스 파일을 가져와서(e.g. uniform.inp) 이름을 `test.inp`로 변경하고 넣도록 한다.
+ 입력 파일은 상수로 설정되어 있으므로 반드시 입력 파일의 이름은 `test.inp`로 해주도록 한다.
+
+ 그리고 만약 내가 trivial한 동작을 돌리고 싶은 경우에는 parallel.h 파일의 `#define TRIVIAL`
+ 매크로의 주석을 해제해주고, 그렇지 않은 개선된 버전을 동작시키는 경우에는 해당 주석을 제거해주도록 한다.
+ 단, DEBUG 주석은 해제하지 말도록 한다.
+
+ 여기까지 했으면 code block의 **Build and run**을 클릭하여 실행해주도록 한다.
  * @date 2020-04-03
- * 
+ *
  */
 #include "parallel.h"
 
@@ -14,7 +23,7 @@ static struct op operation; /**< trivial, improve를 선택할 수 있도록 해
 
 /**
  * @brief 입력 파일 및 출력 파일, N 값을 설정한다. 그리고 PA를 동적 할당하고, 빈 공간 정보를 설정한다.
- * 
+ *
  * @param inp_file 입력 파일의 이름을 가진다.
  * @param outp_file 출력 파일의 이름을 가진다.
  */
@@ -26,6 +35,12 @@ static void setup(const char *inp_file, const char *outp_file)
 	outp_fp = fopen(outp_file, "w");
 
 	fscanf(inp_fp, "%d\n", &N);
+
+	if (N < 0) {
+		fprintf(stderr, "[%s:%s,(%d)] invalid N value(%d)", __FILE__,
+			__FUNCTION__, __LINE__, N);
+		exit(-EINVAL);
+	}
 
 #ifdef TRIVIAL
 	printf("[%s:%s(%d)] trivial setting initialize\n", __FILE__,
@@ -60,7 +75,7 @@ static void setup(const char *inp_file, const char *outp_file)
 
 /**
  * @brief 실제 자료구조를 테스트하는 부분이다.
- * 
+ *
  */
 static void run(clock_t start)
 {
@@ -112,7 +127,7 @@ static void run(clock_t start)
 
 /**
  * @brief 파일을 닫고, 동적 할당된 PA를 해제해주도록 한다.
- * 
+ *
  */
 static void close()
 {
