@@ -21,19 +21,19 @@ static int _wp = 0;
  */
 static int trivial_get_free_wp()
 {
-	int wp = _wp;
-	int is_valid_wp = (wp < MAX_ENTRY_SIZE && wp >= 0);
-	if (is_valid_wp && _id[wp] == -1) {
-		return wp;
-	}
+        int wp = _wp;
+        int is_valid_wp = (wp < MAX_ENTRY_SIZE && wp >= 0);
+        if (is_valid_wp && _id[wp] == -1) {
+                return wp;
+        }
 
-	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
-		if (_id[wp] == -1) {
-			return wp;
-		}
-	}
+        for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
+                if (_id[wp] == -1) {
+                        return wp;
+                }
+        }
 
-	return -ENOENT;
+        return -ENOENT;
 }
 
 /**
@@ -44,13 +44,13 @@ static int trivial_get_free_wp()
  */
 static int trivial_find_wp(const int id)
 {
-	int wp;
-	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
-		if (_id[wp] == id) {
-			return wp;
-		}
-	}
-	return -ENOENT;
+        int wp;
+        for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
+                if (_id[wp] == id) {
+                        return wp;
+                }
+        }
+        return -ENOENT;
 }
 
 /**
@@ -62,17 +62,17 @@ static int trivial_find_wp(const int id)
  */
 static void trivial_insert_string(char **str, char **arr, const int wp)
 {
-	int is_valid;
-	char *ptr;
-	ptr = get_csv_field(str, ",\n");
-	is_valid = (ptr != NULL && strlen(ptr) != 0);
+        int is_valid;
+        char *ptr;
+        ptr = get_csv_field(str, ",\n");
+        is_valid = (ptr != NULL && strlen(ptr) != 0);
 #ifdef DEBUG
-	if (!is_valid) {
-		fprintf(stderr, "[%s:%s(%d)] Cannot find field value(id: %d)\n",
-			__FILE__, __FUNCTION__, __LINE__, _id[wp]);
-	}
+        if (!is_valid) {
+                fprintf(stderr, "[%s:%s(%d)] Cannot find field value(id: %d)\n",
+                        __FILE__, __FUNCTION__, __LINE__, _id[wp]);
+        }
 #endif
-	strncpy(arr[wp], (is_valid ? ptr : "<EMPTY>"), MAX_CHAR_LEN);
+        strncpy(arr[wp], (is_valid ? ptr : "<EMPTY>"), MAX_CHAR_LEN);
 }
 
 /**
@@ -82,33 +82,33 @@ static void trivial_insert_string(char **str, char **arr, const int wp)
  */
 int trivial_init(void)
 {
-	int i;
+        int i;
 
-	_id = (int *)malloc(sizeof(int) * MAX_ENTRY_SIZE);
-	_name = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
-	_bban = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
-	_email = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
-	if (_id == NULL || _name == NULL || _bban == NULL || _email == NULL) {
-		goto exception;
-	}
+        _id = (int *)malloc(sizeof(int) * MAX_ENTRY_SIZE);
+        _name = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
+        _bban = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
+        _email = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
+        if (_id == NULL || _name == NULL || _bban == NULL || _email == NULL) {
+                goto exception;
+        }
 
-	for (i = 0; i < MAX_ENTRY_SIZE; i++) {
-		_id[i] = -1; /** _id[i] = -1; < 빈 공간 정보를 설정한다. */
-		_name[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
-		_bban[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
-		_email[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
-		if (_name[i] == NULL || _bban[i] == NULL || _email[i] == NULL) {
-			goto exception;
-		}
-	}
-	return 0;
+        for (i = 0; i < MAX_ENTRY_SIZE; i++) {
+                _id[i] = -1; /** _id[i] = -1; < 빈 공간 정보를 설정한다. */
+                _name[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
+                _bban[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
+                _email[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
+                if (_name[i] == NULL || _bban[i] == NULL || _email[i] == NULL) {
+                        goto exception;
+                }
+        }
+        return 0;
 
 exception:
 #ifdef DEBUG
-	fprintf(stderr, "[%s:%s(%d)] Cannot allocate the MEMORY\n", __FILE__,
-		__FUNCTION__, __LINE__);
+        fprintf(stderr, "[%s:%s(%d)] Cannot allocate the MEMORY\n", __FILE__,
+                __FUNCTION__, __LINE__);
 #endif
-	return -ENOMEM;
+        return -ENOMEM;
 }
 
 /**
@@ -121,40 +121,40 @@ exception:
  */
 int trivial_insert(char *str, FILE *outp_fp)
 {
-	int wp, is_valid;
-	char *ptr;
-	wp = trivial_get_free_wp();
-	if (wp < 0) {
+        int wp, is_valid;
+        char *ptr;
+        wp = trivial_get_free_wp();
+        if (wp < 0) {
 #ifdef DEBUG
-		fprintf(stderr, "[%s:%s(%d)] Cannot find free WP\n", __FILE__,
-			__FUNCTION__, __LINE__);
+                fprintf(stderr, "[%s:%s(%d)] Cannot find free WP\n", __FILE__,
+                        __FUNCTION__, __LINE__);
 #endif
-		return -ENOMEM;
-	}
+                return -ENOMEM;
+        }
 
-	ptr = get_csv_field(&str, ",\n");
-	is_valid = (ptr != NULL && strlen(ptr) != 0);
-	if (!is_valid) {
+        ptr = get_csv_field(&str, ",\n");
+        is_valid = (ptr != NULL && strlen(ptr) != 0);
+        if (!is_valid) {
 #ifdef DEBUG
-		fprintf(stderr, "[%s:%s(%d)] Cannot allow the empty \"id\"\n",
-			__FILE__, __FUNCTION__, __LINE__);
+                fprintf(stderr, "[%s:%s(%d)] Cannot allow the empty \"id\"\n",
+                        __FILE__, __FUNCTION__, __LINE__);
 #endif
-		return -EINVAL;
-	}
-	_id[wp] = atoi(ptr);
+                return -EINVAL;
+        }
+        _id[wp] = atoi(ptr);
 
-	trivial_insert_string(&str, _name, wp);
-	trivial_insert_string(&str, _bban, wp);
-	trivial_insert_string(&str, _email, wp);
+        trivial_insert_string(&str, _name, wp);
+        trivial_insert_string(&str, _bban, wp);
+        trivial_insert_string(&str, _email, wp);
 
 #ifdef DEBUG
-	fprintf(outp_fp, "INSERT\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
-		_bban[wp], _email[wp]);
+        fprintf(outp_fp, "INSERT\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
+                _bban[wp], _email[wp]);
 #else
-	fprintf(outp_fp, "INSERT\t%d\n", _id[wp]);
+        fprintf(outp_fp, "INSERT\t%d\n", _id[wp]);
 #endif
-	_wp = wp + 1;
-	return 0;
+        _wp = wp + 1;
+        return 0;
 }
 
 /**
@@ -167,19 +167,19 @@ int trivial_insert(char *str, FILE *outp_fp)
  */
 int trivial_search(char *str, FILE *outp_fp)
 {
-	int wp, id;
-	id = atoi(get_csv_field(&str, ","));
-	wp = trivial_find_wp(id);
-	if (wp < 0) {
+        int wp, id;
+        id = atoi(get_csv_field(&str, ","));
+        wp = trivial_find_wp(id);
+        if (wp < 0) {
 #ifdef DEBUG
-		fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
-			__FUNCTION__, __LINE__);
+                fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
+                        __FUNCTION__, __LINE__);
 #endif
-		return -ENOMEM;
-	}
-	fprintf(outp_fp, "SEARCH\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
-		_bban[wp], _email[wp]);
-	return 0;
+                return -ENOMEM;
+        }
+        fprintf(outp_fp, "SEARCH\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
+                _bban[wp], _email[wp]);
+        return 0;
 }
 
 /**
@@ -192,19 +192,19 @@ int trivial_search(char *str, FILE *outp_fp)
  */
 int trivial_remove(char *str, FILE *outp_fp)
 {
-	int wp, id;
-	id = atoi(get_csv_field(&str, ",\n"));
-	wp = trivial_find_wp(id);
-	if (wp < 0) {
+        int wp, id;
+        id = atoi(get_csv_field(&str, ",\n"));
+        wp = trivial_find_wp(id);
+        if (wp < 0) {
 #ifdef DEBUG
-		fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
-			__FUNCTION__, __LINE__);
+                fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
+                        __FUNCTION__, __LINE__);
 #endif
-		return -ENOMEM;
-	}
-	_id[wp] = -1;
-	fprintf(outp_fp, "REMOVE\t%d\n", id);
-	return 0;
+                return -ENOMEM;
+        }
+        _id[wp] = -1;
+        fprintf(outp_fp, "REMOVE\t%d\n", id);
+        return 0;
 }
 
 /**
@@ -214,13 +214,13 @@ int trivial_remove(char *str, FILE *outp_fp)
  */
 int trivial_get_current_usage()
 {
-	int wp, count = 0;
-	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
-		if (_id[wp] != -1) {
-			count++;
-		}
-	}
-	return count;
+        int wp, count = 0;
+        for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
+                if (_id[wp] != -1) {
+                        count++;
+                }
+        }
+        return count;
 }
 
 /**
@@ -229,15 +229,15 @@ int trivial_get_current_usage()
  */
 void trivial_free(void)
 {
-	int i;
+        int i;
 
-	free(_id);
-	for (i = 0; i < MAX_ENTRY_SIZE; i++) {
-		free(_name[i]);
-		free(_bban[i]);
-		free(_email[i]);
-	}
-	free(_name);
-	free(_bban);
-	free(_email);
+        free(_id);
+        for (i = 0; i < MAX_ENTRY_SIZE; i++) {
+                free(_name[i]);
+                free(_bban[i]);
+                free(_email[i]);
+        }
+        free(_name);
+        free(_bban);
+        free(_email);
 }

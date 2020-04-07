@@ -16,7 +16,7 @@
 #include <time.h>
 
 #define MAX_CHAR_LEN                                                           \
-	64 /** MAX_CHAR_LEN < 레코드에서 값을 받을j수 있는 최대 크기 */
+        64 /** MAX_CHAR_LEN < 레코드에서 값을 받을j수 있는 최대 크기 */
 #define MAX_ENTRY_SIZE 10000 /** MAX_ENTRY_SIZE < 기본 값은 10000 */
 #define NR_ITEMS 4
 #define MAX_LINE_LEN (MAX_CHAR_LEN * NR_ITEMS)
@@ -31,19 +31,19 @@
  *
  */
 struct op {
-	int (*init)(void);
-	int (*insert)(
-		char *str,
-		FILE *outp_fp); /** int (*insert)(char *str, FILE *outp_fp); < PA에 insert를 수행한다. */
-	int (*search)(
-		char *str,
-		FILE *outp_fp); /** int (*search)(char *str, FILE *outp_fp); < PA에 search 수행, search도 겸한다. */
-	int (*remove)(
-		char *str,
-		FILE *outp_fp); /** int (*remove)(char *str, FILE *outp_fp); < PA에 remove를 수행한다. */
-	void (*free)(void);
-	int (*get_current_usage)(
-		void); /** int (*get_current_usage)(void); < PA의 현재 메모리 사용량을 보여준다.(DEBUG 전용) */
+        int (*init)(void);
+        int (*insert)(
+                char *str,
+                FILE *outp_fp); /** int (*insert)(char *str, FILE *outp_fp); < PA에 insert를 수행한다. */
+        int (*search)(
+                char *str,
+                FILE *outp_fp); /** int (*search)(char *str, FILE *outp_fp); < PA에 search 수행, search도 겸한다. */
+        int (*remove)(
+                char *str,
+                FILE *outp_fp); /** int (*remove)(char *str, FILE *outp_fp); < PA에 remove를 수행한다. */
+        void (*free)(void);
+        int (*get_current_usage)(
+                void); /** int (*get_current_usage)(void); < PA의 현재 메모리 사용량을 보여준다.(DEBUG 전용) */
 };
 
 #ifdef TRIVIAL
@@ -72,23 +72,23 @@ void improve_free(void);
  */
 static inline char *get_csv_field(char **strptr, const char *delim)
 {
-	char *ptr = *strptr;
+        char *ptr = *strptr;
 
-	if (ptr == NULL) {
-		return NULL;
-	}
+        if (ptr == NULL) {
+                return NULL;
+        }
 
-	while (**strptr) {
-		if (strchr(delim, **strptr) != NULL) {
-			**strptr = 0x00;
-			(*strptr)++;
-			return ptr;
-		}
-		(*strptr)++;
-	}
-	*strptr = NULL;
+        while (**strptr) {
+                if (strchr(delim, **strptr) != NULL) {
+                        **strptr = 0x00;
+                        (*strptr)++;
+                        return ptr;
+                }
+                (*strptr)++;
+        }
+        *strptr = NULL;
 
-	return ptr;
+        return ptr;
 }
 
 #endif

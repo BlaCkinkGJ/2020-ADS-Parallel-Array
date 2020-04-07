@@ -8,12 +8,12 @@
 #include "parallel.h"
 
 #define BITS_PER_BYTE                                                          \
-	8 /** BITS_PER_BYTE < 1 바이트에 들어가는 비트 수를 지칭한다. */
+        8 /** BITS_PER_BYTE < 1 바이트에 들어가는 비트 수를 지칭한다. */
 #define BITMAP_LEN                                                             \
-	(sizeof(unsigned long) *                                               \
-	 BITS_PER_BYTE) /** BITMAP_LEN < 비트맵의 길이를 가진다. */
+        (sizeof(unsigned long) *                                               \
+         BITS_PER_BYTE) /** BITMAP_LEN < 비트맵의 길이를 가진다. */
 #define BITMAP_FULL                                                            \
-	0xffffffff /** BITMAP_FULL < unsigned long이 4 바이트 이므로 이를 마스킹을 할 수 있도록 만든다. */
+        0xffffffff /** BITMAP_FULL < unsigned long이 4 바이트 이므로 이를 마스킹을 할 수 있도록 만든다. */
 
 static int *_id;
 static char **_name;
@@ -31,37 +31,37 @@ static int _wp = 0;
  */
 static int improve_get_free_wp(int id)
 {
-	int wp = _wp, i = 0, offset = 0;
-	int is_valid_wp = (wp < MAX_ENTRY_SIZE && wp >= 0);
-	if (is_valid_wp && _id[wp] == -1) {
-		i = wp / BITMAP_LEN;
-		offset = wp % BITMAP_LEN;
-		_bitmap[i] |=
-			(0x1
-			 << offset); /**_bitmap[i] |= (0x1 << offset); < 비트맵에 값을 설정한다. */
-		return wp;
-	}
+        int wp = _wp, i = 0, offset = 0;
+        int is_valid_wp = (wp < MAX_ENTRY_SIZE && wp >= 0);
+        if (is_valid_wp && _id[wp] == -1) {
+                i = wp / BITMAP_LEN;
+                offset = wp % BITMAP_LEN;
+                _bitmap[i] |=
+                        (0x1
+                         << offset); /**_bitmap[i] |= (0x1 << offset); < 비트맵에 값을 설정한다. */
+                return wp;
+        }
 
-	/**
+        /**
      * @brief 4 byte 단위로 비트맵을 읽어서 꽉 차지 않은 구역을 찾도록 한다.
      *
      */
-	for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
-		if (_bitmap[i] < BITMAP_FULL) {
-			wp = i * BITMAP_LEN;
-			for (offset = 0; offset < BITMAP_LEN; offset++) {
-				if (wp + offset >= MAX_ENTRY_SIZE) {
-					goto ret;
-				}
-				if (_id[wp + offset] == -1) {
-					_bitmap[i] |= (0x1 << offset);
-					return wp + offset;
-				}
-			} // end of for
-		} // end of if
-	} // end of for
+        for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
+                if (_bitmap[i] < BITMAP_FULL) {
+                        wp = i * BITMAP_LEN;
+                        for (offset = 0; offset < BITMAP_LEN; offset++) {
+                                if (wp + offset >= MAX_ENTRY_SIZE) {
+                                        goto ret;
+                                }
+                                if (_id[wp + offset] == -1) {
+                                        _bitmap[i] |= (0x1 << offset);
+                                        return wp + offset;
+                                }
+                        } // end of for
+                } // end of if
+        } // end of for
 ret:
-	return -ENOENT;
+        return -ENOENT;
 }
 
 /**
@@ -73,30 +73,30 @@ ret:
  */
 static int improve_find_wp(const int id, const int is_remove)
 {
-	int wp, i, offset;
+        int wp, i, offset;
 
-	/**
-     * @brief is_remove의 경우에는 bitmap unset을 하는 과정을 추가한다.
-     *
-     */
-	for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
-		if (_bitmap[i] > 0x0) {
-			wp = i * BITMAP_LEN;
-			for (offset = 0; offset < BITMAP_LEN; offset++) {
-				if (wp + offset >= MAX_ENTRY_SIZE) {
-					goto ret;
-				}
-				if (_id[wp + offset] == id) {
-					if (is_remove) {
-						_bitmap[i] &= ~(0x1 << offset);
-					}
-					return (wp + offset);
-				}
-			} // end of for
-		} // end of if
-	} // end of for
+       /**
+        * @brief is_remove의 경우에는 bitmap unset을 하는 과정을 추가한다.
+        *
+        */
+        for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
+                if (_bitmap[i] > 0x0) {
+                        wp = i * BITMAP_LEN;
+                        for (offset = 0; offset < BITMAP_LEN; offset++) {
+                                if (wp + offset >= MAX_ENTRY_SIZE) {
+                                        goto ret;
+                                }
+                                if (_id[wp + offset] == id) {
+                                        if (is_remove) {
+                                                _bitmap[i] &= ~(0x1 << offset);
+                                        }
+                                        return (wp + offset);
+                                }
+                        } // end of for
+                } // end of if
+        } // end of for
 ret:
-	return -ENOENT;
+        return -ENOENT;
 }
 
 /**
@@ -108,17 +108,17 @@ ret:
  */
 static void improve_insert_string(char **str, char **arr, const int wp)
 {
-	int is_valid;
-	char *ptr;
-	ptr = get_csv_field(str, ",\n");
-	is_valid = (ptr != NULL && strlen(ptr) != 0);
+        int is_valid;
+        char *ptr;
+        ptr = get_csv_field(str, ",\n");
+        is_valid = (ptr != NULL && strlen(ptr) != 0);
 #ifdef DEBUG
-	if (!is_valid) {
-		fprintf(stderr, "[%s:%s(%d)] Cannot find field value(id: %d)\n",
-			__FILE__, __FUNCTION__, __LINE__, _id[wp]);
-	}
+        if (!is_valid) {
+                fprintf(stderr, "[%s:%s(%d)] Cannot find field value(id: %d)\n",
+                        __FILE__, __FUNCTION__, __LINE__, _id[wp]);
+        }
 #endif
-	strncpy(arr[wp], (is_valid ? ptr : "<EMPTY>"), MAX_CHAR_LEN);
+        strncpy(arr[wp], (is_valid ? ptr : "<EMPTY>"), MAX_CHAR_LEN);
 }
 
 /**
@@ -128,56 +128,56 @@ static void improve_insert_string(char **str, char **arr, const int wp)
  */
 int improve_init(void)
 {
-	int i, nr_bitmap;
-	int total_size = 0;
+        int i, nr_bitmap;
+        int total_size = 0;
 
-	_id = (int *)malloc(sizeof(int) * MAX_ENTRY_SIZE);
-	total_size += sizeof(int) * MAX_ENTRY_SIZE;
-	_name = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
-	_bban = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
-	_email = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
-	total_size += sizeof(char *) * MAX_ENTRY_SIZE * 3;
-	if (_id == NULL || _name == NULL || _bban == NULL || _email == NULL) {
-		goto exception;
-	}
+        _id = (int *)malloc(sizeof(int) * MAX_ENTRY_SIZE);
+        total_size += sizeof(int) * MAX_ENTRY_SIZE;
+        _name = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
+        _bban = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
+        _email = (char **)malloc(sizeof(char *) * MAX_ENTRY_SIZE);
+        total_size += sizeof(char *) * MAX_ENTRY_SIZE * 3;
+        if (_id == NULL || _name == NULL || _bban == NULL || _email == NULL) {
+                goto exception;
+        }
 
-	for (i = 0; i < MAX_ENTRY_SIZE; i++) {
-		_id[i] = -1; /**_id[i] = -1; < 빈 공간 정보를 설정한다. */
-		_name[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
-		_bban[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
-		_email[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
-		total_size += sizeof(char) * MAX_CHAR_LEN * 3;
-		if (_name[i] == NULL || _bban[i] == NULL || _email[i] == NULL) {
-			goto exception;
-		}
-	}
+        for (i = 0; i < MAX_ENTRY_SIZE; i++) {
+                _id[i] = -1; /**_id[i] = -1; < 빈 공간 정보를 설정한다. */
+                _name[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
+                _bban[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
+                _email[i] = (char *)malloc(sizeof(char) * MAX_CHAR_LEN);
+                total_size += sizeof(char) * MAX_CHAR_LEN * 3;
+                if (_name[i] == NULL || _bban[i] == NULL || _email[i] == NULL) {
+                        goto exception;
+                }
+        }
 
-	nr_bitmap = MAX_ENTRY_SIZE / BITMAP_LEN;
-	_bitmap = (unsigned long *)malloc(sizeof(unsigned long) *
-					  (nr_bitmap + 1));
-	if (_bitmap == NULL) {
-		goto exception;
-	}
-	printf("[%s:%s(%d)] Additional Memory: %.2lfKB/%.2lfKB(%lf%%)\n",
-	       __FILE__, __FUNCTION__, __LINE__,
-	       (sizeof(unsigned long) * (nr_bitmap + 1)) / 1000.0,
-	       total_size / 1000.0,
-	       (double)(sizeof(unsigned long) * (nr_bitmap + 1)) / total_size *
-		       100);
+        nr_bitmap = MAX_ENTRY_SIZE / BITMAP_LEN;
+        _bitmap = (unsigned long *)malloc(sizeof(unsigned long) *
+                                          (nr_bitmap + 1));
+        if (_bitmap == NULL) {
+                goto exception;
+        }
+        printf("[%s:%s(%d)] Additional Memory: %.2lfKB/%.2lfKB(%lf%%)\n",
+               __FILE__, __FUNCTION__, __LINE__,
+               (sizeof(unsigned long) * (nr_bitmap + 1)) / 1000.0,
+               total_size / 1000.0,
+               (double)(sizeof(unsigned long) * (nr_bitmap + 1)) / total_size *
+                       100);
 #ifdef DEBUG
-	for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
-		_bitmap[i] &= 0x00;
-		printf("_bitmap[%d]: 0x%08lx\n", i, _bitmap[i]);
-	}
+        for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
+                _bitmap[i] &= 0x00;
+                printf("_bitmap[%d]: 0x%08lx\n", i, _bitmap[i]);
+        }
 #endif
-	return 0;
+        return 0;
 
 exception:
 #ifdef DEBUG
-	fprintf(stderr, "[%s:%s(%d)] Cannot allocate the MEMORY\n", __FILE__,
-		__FUNCTION__, __LINE__);
+        fprintf(stderr, "[%s:%s(%d)] Cannot allocate the MEMORY\n", __FILE__,
+                __FUNCTION__, __LINE__);
 #endif
-	return -ENOMEM;
+        return -ENOMEM;
 }
 
 /**
@@ -190,41 +190,41 @@ exception:
  */
 int improve_insert(char *str, FILE *outp_fp)
 {
-	int wp, is_valid, id;
-	char *ptr;
+        int wp, is_valid, id;
+        char *ptr;
 
-	ptr = get_csv_field(&str, ",\n");
-	is_valid = (ptr != NULL && strlen(ptr) != 0);
-	if (!is_valid) {
+        ptr = get_csv_field(&str, ",\n");
+        is_valid = (ptr != NULL && strlen(ptr) != 0);
+        if (!is_valid) {
 #ifdef DEBUG
-		fprintf(stderr, "[%s:%s(%d)] Cannot allow the empty \"id\"\n",
-			__FILE__, __FUNCTION__, __LINE__);
+                fprintf(stderr, "[%s:%s(%d)] Cannot allow the empty \"id\"\n",
+                        __FILE__, __FUNCTION__, __LINE__);
 #endif
-		return -EINVAL;
-	}
-	id = atoi(ptr);
-	wp = improve_get_free_wp(id);
-	if (wp < 0) {
+                return -EINVAL;
+        }
+        id = atoi(ptr);
+        wp = improve_get_free_wp(id);
+        if (wp < 0) {
 #ifdef DEBUG
-		fprintf(stderr, "[%s:%s(%d)] Cannot find free WP\n", __FILE__,
-			__FUNCTION__, __LINE__);
+                fprintf(stderr, "[%s:%s(%d)] Cannot find free WP\n", __FILE__,
+                        __FUNCTION__, __LINE__);
 #endif
-		return -ENOMEM;
-	}
+                return -ENOMEM;
+        }
 
-	_id[wp] = id;
-	improve_insert_string(&str, _name, wp);
-	improve_insert_string(&str, _bban, wp);
-	improve_insert_string(&str, _email, wp);
+        _id[wp] = id;
+        improve_insert_string(&str, _name, wp);
+        improve_insert_string(&str, _bban, wp);
+        improve_insert_string(&str, _email, wp);
 
 #ifdef DEBUG
-	fprintf(outp_fp, "INSERT\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
-		_bban[wp], _email[wp]);
+        fprintf(outp_fp, "INSERT\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
+                _bban[wp], _email[wp]);
 #else
-	fprintf(outp_fp, "INSERT\t%d\n", _id[wp]);
+        fprintf(outp_fp, "INSERT\t%d\n", _id[wp]);
 #endif
-	_wp = wp + 1;
-	return 0;
+        _wp = wp + 1;
+        return 0;
 }
 
 /**
@@ -237,19 +237,19 @@ int improve_insert(char *str, FILE *outp_fp)
  */
 int improve_search(char *str, FILE *outp_fp)
 {
-	int wp, id;
-	id = atoi(get_csv_field(&str, ","));
-	wp = improve_find_wp(id, 0);
-	if (wp < 0) {
+        int wp, id;
+        id = atoi(get_csv_field(&str, ","));
+        wp = improve_find_wp(id, 0);
+        if (wp < 0) {
 #ifdef DEBUG
-		fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
-			__FUNCTION__, __LINE__);
+                fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
+                        __FUNCTION__, __LINE__);
 #endif
-		return -ENOMEM;
-	}
-	fprintf(outp_fp, "SEARCH\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
-		_bban[wp], _email[wp]);
-	return 0;
+                return -ENOMEM;
+        }
+        fprintf(outp_fp, "SEARCH\t%d\t%s\t%s\t%s\n", _id[wp], _name[wp],
+                _bban[wp], _email[wp]);
+        return 0;
 }
 
 /**
@@ -262,19 +262,19 @@ int improve_search(char *str, FILE *outp_fp)
  */
 int improve_remove(char *str, FILE *outp_fp)
 {
-	int wp, id;
-	id = atoi(get_csv_field(&str, ",\n"));
-	wp = improve_find_wp(id, 1);
-	if (wp < 0) {
+        int wp, id;
+        id = atoi(get_csv_field(&str, ",\n"));
+        wp = improve_find_wp(id, 1);
+        if (wp < 0) {
 #ifdef DEBUG
-		fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
-			__FUNCTION__, __LINE__);
+                fprintf(stderr, "[%s:%s(%d)] Cannot find WP\n", __FILE__,
+                        __FUNCTION__, __LINE__);
 #endif
-		return -ENOMEM;
-	}
-	_id[wp] = -1;
-	fprintf(outp_fp, "REMOVE\t%d\n", id);
-	return 0;
+                return -ENOMEM;
+        }
+        _id[wp] = -1;
+        fprintf(outp_fp, "REMOVE\t%d\n", id);
+        return 0;
 }
 
 /**
@@ -284,13 +284,13 @@ int improve_remove(char *str, FILE *outp_fp)
  */
 int improve_get_current_usage()
 {
-	int wp, count = 0;
-	for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
-		if (_id[wp] != -1) {
-			count++;
-		}
-	}
-	return count;
+        int wp, count = 0;
+        for (wp = 0; wp < MAX_ENTRY_SIZE; wp++) {
+                if (_id[wp] != -1) {
+                        count++;
+                }
+        }
+        return count;
 }
 
 /**
@@ -299,15 +299,15 @@ int improve_get_current_usage()
  */
 void improve_free(void)
 {
-	int i;
+        int i;
 
-	free(_id);
-	for (i = 0; i < MAX_ENTRY_SIZE; i++) {
-		free(_name[i]);
-		free(_bban[i]);
-		free(_email[i]);
-	}
-	free(_name);
-	free(_bban);
-	free(_email);
+        free(_id);
+        for (i = 0; i < MAX_ENTRY_SIZE; i++) {
+                free(_name[i]);
+                free(_bban[i]);
+                free(_email[i]);
+        }
+        free(_name);
+        free(_bban);
+        free(_email);
 }
