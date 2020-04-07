@@ -43,9 +43,9 @@ static int improve_get_free_wp(int id)
         }
 
         /**
-     * @brief 4 byte 단위로 비트맵을 읽어서 꽉 차지 않은 구역을 찾도록 한다.
-     *
-     */
+         * @brief 4 byte 단위로 비트맵을 읽어서 꽉 차지 않은 구역을 찾도록 한다.
+         *
+         */
         for (i = 0; i * BITMAP_LEN < MAX_ENTRY_SIZE; i++) {
                 if (_bitmap[i] < BITMAP_FULL) {
                         wp = i * BITMAP_LEN;
@@ -75,7 +75,7 @@ static int improve_find_wp(const int id, const int is_remove)
 {
         int wp, i, offset;
 
-       /**
+        /**
         * @brief is_remove의 경우에는 bitmap unset을 하는 과정을 추가한다.
         *
         */
